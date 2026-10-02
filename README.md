@@ -63,6 +63,8 @@ loaded as a Web Worker, never bundled into the app code.
 
 ## Deployment
 
-Pushing to `main` builds the app and publishes it to GitHub Pages
-(`.github/workflows/deploy.yml`). To enable it once, go to **Settings → Pages → Build and
-deployment** and set **Source** to **GitHub Actions**.
+Live site: https://sharmaxhimanshu1-arch.github.io/lets-chess/
+
+Every push to the repository's default branch runs the tests, builds the app and publishes it to
+GitHub Pages (`.github/workflows/deploy.yml`). Pages has to be switched on once: **Settings → Pages
+→ Build and deployment → Source: GitHub Actions**.
