@@ -2,13 +2,22 @@ import { useSyncExternalStore } from 'react'
 import { analyzeGame } from '../analysis/analyzeGame'
 import { ANALYSIS_VERSION } from '../analysis/types'
 import { db, getSettings } from '../db/db'
-import { createStockfish } from '../engine/stockfish'
+import { createStockfishPool } from '../engine/stockfish'
 import type { Engine } from '../engine/uci'
 import type { StoredGame } from '../lib/chesscom'
 
 export type QueueState =
   | { status: 'idle' }
-  | { status: 'running'; gameId: string; done: number; total: number; remaining: number }
+  | {
+      status: 'running'
+      gameId: string
+      /** Positions analysed so far in this game, out of `total`. */
+      done: number
+      total: number
+      /** This game's place in the current batch: game `index` of `count`. */
+      index: number
+      count: number
+    }
   | { status: 'error'; message: string }
 
 let state: QueueState = { status: 'idle' }
@@ -51,20 +60,22 @@ async function backlog(): Promise<StoredGame[]> {
 export async function runAnalysisQueue(): Promise<void> {
   if (running) return
   running = true
+  let finished = 0
   try {
     for (;;) {
       const pending = await backlog()
       const game = pending[0]
       if (!game) break
       const { depth } = await getSettings()
-      engine ??= createStockfish()
-      setState({ status: 'running', gameId: game.id, done: 0, total: 1, remaining: pending.length })
+      engine ??= createStockfishPool()
+      const position = { gameId: game.id, index: finished + 1, count: finished + pending.length }
+      setState({ status: 'running', ...position, done: 0, total: 1 })
       const analysis = await analyzeGame(game, engine, {
         depth,
-        onProgress: (done, total) =>
-          setState({ status: 'running', gameId: game.id, done, total, remaining: pending.length }),
+        onProgress: (done, total) => setState({ status: 'running', ...position, done, total }),
       })
       await db.analyses.put(analysis)
+      finished++
       const index = requested.indexOf(game.id)
       if (index >= 0) requested.splice(index, 1)
     }

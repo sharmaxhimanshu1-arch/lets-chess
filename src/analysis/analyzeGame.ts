@@ -31,15 +31,17 @@ export async function analyzeGame(
 ): Promise<GameAnalysis> {
   const { startFen, moves } = parsePgn(game.pgn)
   const fens = [startFen, ...moves.map((m) => m.fenAfter)]
-  const lines: EngineLine[] = []
-
-  for (const [i, fen] of fens.entries()) {
-    signal?.throwIfAborted()
-    const line = terminalLine(fen) ??
-      (await engine.analyse(fen, { depth }))[0] ?? { score: { cp: 0 }, pv: [], depth: 0 }
-    lines.push(line)
-    onProgress?.(i + 1, fens.length)
-  }
+  // Ask for every position at once; an engine pool spreads them across its workers.
+  let done = 0
+  const lines: EngineLine[] = await Promise.all(
+    fens.map(async (fen) => {
+      signal?.throwIfAborted()
+      const line = terminalLine(fen) ??
+        (await engine.analyse(fen, { depth }))[0] ?? { score: { cp: 0 }, pv: [], depth: 0 }
+      onProgress?.(++done, fens.length)
+      return line
+    }),
+  )
 
   const analyzed = moves.map((move, i): AnalyzedMove => {
     const before = lines[i]

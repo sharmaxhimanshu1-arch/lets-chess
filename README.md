@@ -14,8 +14,8 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan and milestones.
 
 - **Import**: enter your Chess.com username to pull your standard rapid games. Later imports only
   re-fetch the latest month. You can also paste a PGN in Settings.
-- **Analysis**: Stockfish 19 Lite (WASM) runs in a Web Worker over every position of your latest
-  games (30 by default, depth 14). Moves are graded inaccuracy / mistake / blunder by the win %
+- **Analysis**: Stockfish 19 Lite (WASM) runs in Web Workers, one per spare CPU core (up to 4),
+  over every position of your latest games (30 by default, depth 12). Moves are graded inaccuracy / mistake / blunder by the win %
   they gave away (Lichess thresholds).
 - **Explanations**: rule-based detectors label your mistakes in plain words: hung pieces,
   missed free pieces, allowed or missed mates, allowed or missed forks, moving too fast, and

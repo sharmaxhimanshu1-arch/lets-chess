@@ -48,7 +48,8 @@ function QueueStatus() {
     return (
       <div className="queue-status" aria-live="polite">
         <span className="spinner" />
-        Analysing… {queue.remaining > 1 ? `${queue.remaining} games left` : 'last game'}
+        Analysing game {queue.index} of {queue.count} ·{' '}
+        {Math.round((queue.done / queue.total) * 100)}%
       </div>
     )
   }

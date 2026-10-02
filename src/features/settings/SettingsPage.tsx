@@ -69,7 +69,7 @@ function AccountForm({ settings }: { settings: Settings }) {
           {DEPTHS.map((d) => (
             <option key={d} value={d}>
               {d}
-              {d === 14 ? ' (recommended)' : d < 14 ? ' (faster)' : ' (slower, stronger)'}
+              {d === 12 ? ' (recommended)' : d < 12 ? ' (fastest)' : ' (slower, deeper)'}
             </option>
           ))}
         </select>

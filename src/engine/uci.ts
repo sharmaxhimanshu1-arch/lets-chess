@@ -55,45 +55,70 @@ export function toWhitePov(score: Score, mover: Color): Score {
   return 'cp' in score ? { cp: -score.cp } : { mate: -score.mate }
 }
 
+export interface UciSessionOptions {
+  /** Transposition table size in MB. */
+  hashMb?: number
+  /** How long the engine may take to start up before we give up. */
+  readyTimeoutMs?: number
+  /** How long a single position may take before we give up. */
+  searchTimeoutMs?: number
+}
+
+export class EngineError extends Error {}
+
 /**
  * Drives a UCI engine over a line-based transport (a Web Worker or a child process).
- * Requests run one at a time.
+ * Requests run one at a time. Startup and searches time out instead of hanging forever.
  */
 export class UciSession implements Engine {
   private listener: ((line: string) => void) | null = null
+  private readonly ready: Promise<void>
   private queue: Promise<unknown>
   private multiPv = 1
   private readonly send: (command: string) => void
   private readonly close: () => void
+  private readonly options: Required<UciSessionOptions>
 
   constructor(
     send: (command: string) => void,
     subscribe: (onLine: (line: string) => void) => void,
     close: () => void,
+    { hashMb = 16, readyTimeoutMs = 20_000, searchTimeoutMs = 60_000 }: UciSessionOptions = {},
   ) {
     this.send = send
     this.close = close
+    this.options = { hashMb, readyTimeoutMs, searchTimeoutMs }
     subscribe((text) => {
       for (const line of text.split('\n')) if (line.trim()) this.listener?.(line.trim())
     })
-    this.queue = this.handshake()
+    this.ready = this.handshake()
+    this.queue = this.ready.catch(() => undefined)
   }
 
   private async handshake() {
-    await this.command('uci', (line) => line === 'uciok')
-    this.send('setoption name Hash value 32')
-    await this.command('isready', (line) => line === 'readyok')
+    const { readyTimeoutMs, hashMb } = this.options
+    const failed = 'The chess engine failed to load in this browser.'
+    await this.command('uci', (line) => line === 'uciok', undefined, readyTimeoutMs, failed)
+    this.send(`setoption name Hash value ${hashMb}`)
+    await this.command('isready', (line) => line === 'readyok', undefined, readyTimeoutMs, failed)
   }
 
   private command(
     command: string,
     isDone: (line: string) => boolean,
-    onLine?: (line: string) => void,
+    onLine: ((line: string) => void) | undefined,
+    timeoutMs: number,
+    timeoutMessage: string,
   ) {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.listener = null
+        reject(new EngineError(timeoutMessage))
+      }, timeoutMs)
       this.listener = (line) => {
         onLine?.(line)
         if (isDone(line)) {
+          clearTimeout(timer)
           this.listener = null
           resolve()
         }
@@ -104,6 +129,7 @@ export class UciSession implements Engine {
 
   analyse(fen: string, { depth, multiPv = 1 }: AnalyseOptions): Promise<EngineLine[]> {
     const run = async () => {
+      await this.ready
       if (multiPv !== this.multiPv) {
         this.send(`setoption name MultiPV value ${multiPv}`)
         this.multiPv = multiPv
@@ -117,6 +143,8 @@ export class UciSession implements Engine {
           const info = parseInfo(line)
           if (info) latest.set(info.multipv, info)
         },
+        this.options.searchTimeoutMs,
+        'The chess engine stopped responding.',
       )
       const mover = sideToMove(fen)
       return [...latest.entries()]

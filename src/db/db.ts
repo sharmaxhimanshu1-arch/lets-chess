@@ -1,19 +1,9 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { GameAnalysis } from '../analysis/types'
 import type { StoredGame } from '../lib/chesscom'
+import { DEFAULT_SETTINGS, migrateSettings, type Settings } from './settings'
 
-export interface Settings {
-  username: string
-  /** Stockfish search depth per position. */
-  depth: number
-  /** How many of the most recent games to analyse automatically. */
-  maxGames: number
-  /** Newest Chess.com archive month imported ("2026/09"). */
-  lastMonth?: string
-  lastImportAt?: number
-}
-
-export const DEFAULT_SETTINGS: Settings = { username: '', depth: 14, maxGames: 30 }
+export { DEFAULT_SETTINGS, type Settings }
 
 type SettingsRow = Settings & { key: 'settings' }
 
@@ -32,7 +22,7 @@ export const db = new LetsChessDb()
 
 export async function getSettings(): Promise<Settings> {
   const row = await db.settings.get('settings')
-  return { ...DEFAULT_SETTINGS, ...row }
+  return row ? migrateSettings({ ...DEFAULT_SETTINGS, ...row }) : DEFAULT_SETTINGS
 }
 
 export async function saveSettings(patch: Partial<Settings>): Promise<void> {

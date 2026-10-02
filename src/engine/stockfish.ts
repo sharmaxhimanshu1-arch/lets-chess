@@ -1,3 +1,4 @@
+import { createEnginePool, defaultPoolSize } from './pool'
 import { UciSession, type Engine } from './uci'
 
 /** Copied into public/engine/ by scripts/copy-engine.mjs. */
@@ -13,4 +14,9 @@ export function createStockfish(url = ENGINE_URL): Engine {
     },
     () => worker.terminate(),
   )
+}
+
+/** One Stockfish worker per spare CPU core (up to 4), used as a single engine. */
+export function createStockfishPool(size = defaultPoolSize()): Engine {
+  return createEnginePool(size, () => createStockfish())
 }

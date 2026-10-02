@@ -1,11 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { gameFromPgn } from '../lib/chesscom'
+import { createEnginePool } from '../engine/pool'
 import { createNodeStockfish } from '../test/nodeEngine'
 import { HUNG_QUEEN_PGN, SCHOLARS_MATE_PGN } from '../test/fixtures'
 import { analyzeGame } from './analyzeGame'
 
 describe('analyzeGame (real engine)', () => {
-  const engine = createNodeStockfish()
+  // Two engines, as in the browser, so positions are analysed out of order.
+  const engine = createEnginePool(2, createNodeStockfish)
   afterAll(() => engine.dispose())
 
   it('explains a Scholar’s Mate loss', async () => {

@@ -49,6 +49,7 @@ The repo (`sharmaxhimanshu1-arch/lets-chess`) is empty, so this is a greenfield 
 
 - ✅ M0 Scaffold
 - ✅ M1 Import → Analyse → Review. Notes: detectors live in a single `analysis/patterns.ts`. Analysis uses MultiPV 1 for speed. For a mistake no detector explains, the review shows the best move and the opponent's best reply ("your move allowed Nxe5").
+- ✅ Speed fix: analysis was ~200 ms/position at depth 14 in a single worker. It now uses depth 12 by default plus a pool of up to 4 workers, ~6× faster on a 4-core machine. Engine start-up and searches time out with a visible error instead of hanging.
 - ⏳ M2 Mistake dashboard
 
 ## Milestones (one PR each)
@@ -69,4 +70,4 @@ The repo (`sharmaxhimanshu1-arch/lets-chess`) is empty, so this is a greenfield 
 ## Open items (to be settled during M1, no blocker)
 
 - Your Chess.com username, which only goes into settings at runtime and is never committed.
-- Default engine depth (14) and how many recent games to analyse by default (30). Both can be changed in settings.
+- Default engine depth (12) and how many recent games to analyse by default (30). Both can be changed in settings.

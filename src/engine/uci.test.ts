@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { createNodeStockfish } from '../test/nodeEngine'
-import { parseInfo, toWhitePov } from './uci'
+import { parseInfo, toWhitePov, UciSession } from './uci'
 
 describe('parseInfo', () => {
   it('parses centipawn and mate lines', () => {
@@ -22,6 +22,38 @@ describe('parseInfo', () => {
     expect(toWhitePov({ cp: 50 }, 'b')).toEqual({ cp: -50 })
     expect(toWhitePov({ mate: 2 }, 'b')).toEqual({ mate: -2 })
     expect(toWhitePov({ cp: 50 }, 'w')).toEqual({ cp: 50 })
+  })
+})
+
+describe('UciSession timeouts', () => {
+  it('fails with a clear message when the engine never starts', async () => {
+    // A transport that swallows every command, like a worker whose script failed to load.
+    const silent = new UciSession(
+      () => {},
+      () => {},
+      () => {},
+      { readyTimeoutMs: 20 },
+    )
+    await expect(silent.analyse('8/8/8/8/8/8/8/K1k5 w - - 0 1', { depth: 1 })).rejects.toThrow(
+      'The chess engine failed to load in this browser.',
+    )
+  })
+
+  it('fails when a search never finishes', async () => {
+    let onLine: (line: string) => void = () => {}
+    const stuck = new UciSession(
+      (command) => {
+        if (command === 'uci') onLine('uciok')
+        if (command === 'isready') onLine('readyok')
+        // Never answers "go".
+      },
+      (listener) => (onLine = listener),
+      () => {},
+      { searchTimeoutMs: 20 },
+    )
+    await expect(stuck.analyse('8/8/8/8/8/8/8/K1k5 w - - 0 1', { depth: 1 })).rejects.toThrow(
+      'The chess engine stopped responding.',
+    )
   })
 })
 
