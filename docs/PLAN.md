@@ -45,6 +45,12 @@ The repo (`sharmaxhimanshu1-arch/lets-chess`) is empty, so this is a greenfield 
 - `features/`: `import/`, `review/`, `dashboard/`, `puzzles/`, `plan/`. Shared `components/`: `Board`, `EvalBar`, `MoveList`, `LabelBadge`.
 - Routing with `react-router`: `/` (game list), `/game/:id`, `/dashboard`, `/puzzles`, `/plan`, `/settings`.
 
+## Status
+
+- ✅ M0 Scaffold
+- ✅ M1 Import → Analyse → Review. Notes: detectors live in a single `analysis/patterns.ts`. Analysis uses MultiPV 1 for speed. For a mistake no detector explains, the review shows the best move and the opponent's best reply ("your move allowed Nxe5").
+- ⏳ M2 Mistake dashboard
+
 ## Milestones (one PR each)
 
 1. **M0 Scaffold**: Vite + TS + oxlint/Prettier + Vitest, CI workflow (lint, typecheck, test, build), Pages deploy, `docs/PLAN.md` copy of this plan.
